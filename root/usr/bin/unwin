@@ -4,8 +4,6 @@ running="/run/user/$(id -u)/unwin"
 server="${running}/server"
 jobs="${running}/jobs"
 job="${jobs}/${$}"
-lock="/tmp/.X99-lock"
-user="$(logname)"
 
 
 mainFunction () {
@@ -52,14 +50,6 @@ prepareEnvironment () {
 }
 
 
-processId () {
-	local user="${1}"
-	local process="${2}"
-	
-	pgrep -u "${user}" -x "${process}"
-}
-
-
 registerJob () {
 	mkdir --parents "${jobs}"
 	touch "${job}"
@@ -67,14 +57,12 @@ registerJob () {
 
 
 startFramebuffer () {
+	local lock="/tmp/.X99-lock"
+
 	if [[ ! -f "${lock}" ]]; then
 		mkdir --parents "${running}"
-		local RunningServerId; RunningServerId="$(processId "${user}" "Xvfb" || true)"
 		Xvfb :99 &
-		
-		if [[ -z "${RunningServerId}" ]]; then
-			echo "${!}" > "${server}"
-		fi
+		echo "${!}" > "${server}"
 	fi
 }
 
