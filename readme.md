@@ -1,2 +1,3 @@
 ```
-MAN HERE
+USAGE
+       unwin [program]

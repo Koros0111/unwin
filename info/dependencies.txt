@@ -1,3 +1,4 @@
 "bash"  "/bin/bash"
+"xorg-server-xvfb"  "usr/bin/Xvfb"
 "args"  "/bin/args"  "https://gitlab.com/es20490446e/args"
 "oman"  "/bin/oman"  "https://gitlab.com/es20490446e/oman"
