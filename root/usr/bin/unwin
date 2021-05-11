@@ -1,0 +1,83 @@
+#! /bin/bash
+
+running="/run/user/$(id -u)/unwin"
+server="${running}/server"
+jobs="${running}/jobs"
+job="${jobs}/${$}"
+lock="/tmp/.X99-lock"
+user="$(logname)"
+
+
+mainFunction () {
+	trap "cleanUp" ABRT ERR HUP INT QUIT TERM EXIT
+	startFramebuffer
+	registerJob
+	DISPLAY=:99 "${args[@]}"
+}
+
+
+checkArgumentQuantity () {
+	if [[ "${#args[@]}" -eq 0 ]]; then
+		echo "No command specified" >&2
+		echo "Type: unwin COMMAND"
+		exit 1
+	fi
+}
+
+
+cleanUp () {
+	rm --force "${job}"
+	
+	if dirIsEmpty "${jobs}"; then
+		if [[ -f "${server}" ]]; then
+			kill -TERM "$(cat "${server}")" || rm --recursive "${running}"
+		fi
+		
+		rm --recursive "${running}"
+	fi
+}
+
+
+dirIsEmpty () {
+	local dir="${*}"
+
+	[[ -d "${dir}" ]] && [[ -z "$(ls --almost-all "${dir}")" ]]
+}
+
+
+prepareEnvironment () {
+	set -eum
+	readarray -t args < <(args "${@}")
+	checkArgumentQuantity
+}
+
+
+processId () {
+	local user="${1}"
+	local process="${2}"
+	
+	pgrep -u "${user}" -x "${process}"
+}
+
+
+registerJob () {
+	mkdir --parents "${jobs}"
+	touch "${job}"
+}
+
+
+startFramebuffer () {
+	if [[ ! -f "${lock}" ]]; then
+		mkdir --parents "${running}"
+		local RunningServerId; RunningServerId="$(processId "${user}" "Xvfb" || true)"
+		Xvfb :99 &
+		
+		if [[ -z "${RunningServerId}" ]]; then
+			echo "${!}" > "${server}"
+		fi
+	fi
+}
+
+
+prepareEnvironment "${@}"
+mainFunction
