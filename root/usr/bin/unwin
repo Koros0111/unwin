@@ -1,5 +1,6 @@
 #! /bin/bash
 
+lock="/tmp/.X99-lock"
 running="/run/user/$(id -u)/unwin"
 server="${running}/server"
 jobs="${running}/jobs"
@@ -10,7 +11,7 @@ mainFunction () {
 	trap "cleanUp" ABRT ERR HUP INT QUIT TERM EXIT
 	startFramebuffer
 	registerJob
-	DISPLAY=:99 "${args[@]}"
+	runProgram
 }
 
 
@@ -37,7 +38,7 @@ cleanUp () {
 
 
 dirIsEmpty () {
-	local dir="${*}"
+	dir="${*}"
 
 	[[ -d "${dir}" ]] && [[ -z "$(ls --almost-all "${dir}")" ]]
 }
@@ -56,14 +57,35 @@ registerJob () {
 }
 
 
-startFramebuffer () {
-	local lock="/tmp/.X99-lock"
+runProgram () {
+	waitFileCreation "${lock}" "10"
+	DISPLAY=:99 "${args[@]}"
+}
 
+
+startFramebuffer () {
 	if [[ ! -f "${lock}" ]]; then
 		mkdir --parents "${running}"
 		Xvfb :99 &
 		echo "${!}" > "${server}"
 	fi
+}
+
+
+waitFileCreation () {
+	local file="${1}"
+	local timeout="${2}"
+	local time=0
+	
+	while [[ ! -f "${file}" ]]; do
+		if [[ -n "${timeout}" ]] && [[ "${time}" -gt "$(("${timeout}" * 10))" ]]; then
+			echo "waitFileCreation: timedOut: ${file}" >&2
+			exit 1
+		fi
+		
+		sleep 0.1
+		time="$(("${time}" + 1))"
+	done
 }
 
 
