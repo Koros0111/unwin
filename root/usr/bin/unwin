@@ -1,7 +1,9 @@
 #! /bin/bash
+set -em
 
 lock="/tmp/.X99-lock"
-running="/run/user/$(id -u)/unwin"
+run="/run/user/$(id -u)"
+running="${run}/unwin"
 server="${running}/server"
 jobs="${running}/jobs"
 job="${jobs}/${$}"
@@ -38,14 +40,13 @@ cleanUp () {
 
 
 dirIsEmpty () {
-	dir="${*}"
+	dir="${1}"
 
 	[[ -d "${dir}" ]] && [[ -z "$(ls --almost-all "${dir}")" ]]
 }
 
 
 prepareEnvironment () {
-	set -eum
 	readarray -t args < <(args "${@}")
 	checkArgumentQuantity
 }
@@ -58,7 +59,7 @@ registerJob () {
 
 
 runProgram () {
-	waitFileCreation "${lock}" "10"
+	waitFileCreation "${run}/Xvfb_screen0" "10"
 	DISPLAY=:99 "${args[@]}"
 }
 
@@ -66,7 +67,7 @@ runProgram () {
 startFramebuffer () {
 	if [[ ! -f "${lock}" ]]; then
 		mkdir --parents "${running}"
-		Xvfb :99 &
+		Xvfb :99 -fbdir "${run}" &
 		echo "${!}" > "${server}"
 	fi
 }
