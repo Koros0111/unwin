@@ -59,7 +59,7 @@ registerJob () {
 
 
 runProgram () {
-	waitFileCreation "${run}/Xvfb_screen0" "10"
+	waitDisplay :99
 	DISPLAY=:99 "${args[@]}"
 }
 
@@ -73,19 +73,11 @@ startFramebuffer () {
 }
 
 
-waitFileCreation () {
-	local file="${1}"
-	local timeout="${2}"
-	local time=0
-	
-	while [[ ! -f "${file}" ]]; do
-		if [[ -n "${timeout}" ]] && [[ "${time}" -gt "$(("${timeout}" * 10))" ]]; then
-			echo "waitFileCreation: timedOut: ${file}" >&2
-			exit 1
-		fi
-		
+waitDisplay () {
+	local display="${1}"
+
+	while ! xdpyinfo -display "${display}" &>/dev/null; do
 		sleep 0.1
-		time="$(("${time}" + 1))"
 	done
 }
 
